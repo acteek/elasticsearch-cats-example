@@ -1,7 +1,6 @@
 package com.github.acteek.example
 
-import cats.Monad
-import cats.effect.{Resource, Sync}
+import cats.effect.{Async, Resource, Sync}
 import com.sksamuel.elastic4s.{ElasticClient, ElasticProperties, Executor, Functor, Handler, Response}
 import com.sksamuel.elastic4s.http.JavaClient
 
@@ -13,7 +12,7 @@ trait Elastic[F[_]] {
 
 object Elastic {
 
-  def resource[F[_]: Sync: Executor: Functor: Monad](host: String): Resource[F, Elastic[F]] =
+  def resource[F[_]: Async: Executor: Functor](host: String): Resource[F, Elastic[F]] =
     Resource.make {
       Sync[F].delay {
         val properties = ElasticProperties(host)
