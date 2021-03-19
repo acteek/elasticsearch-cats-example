@@ -10,9 +10,3 @@
 $ sbt
  runMain com.github.acteek.example.CatsExample
 ```
-output:
-```
-Cat(id00002,Iriska,10,List(pineapple, fish),Owner(Bob,Doll))
-Cat(id00003,Bob,1,List(fish),Owner(Bob,Doll))
-There were 2 total hits
-```

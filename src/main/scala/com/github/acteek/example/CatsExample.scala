@@ -2,7 +2,9 @@ package com.github.acteek.example
 
 import cats.effect._
 import cats.implicits._
-import com.sksamuel.elastic4s.{RequestFailure, RequestSuccess, Response}
+import com.sksamuel.elastic4s.{
+  ArrayFieldValue, NestedFieldValue, RequestFailure, RequestSuccess, Response, SimpleFieldValue
+}
 import com.sksamuel.elastic4s.fields._
 import com.sksamuel.elastic4s.requests.common.RefreshPolicy
 import com.sksamuel.elastic4s.requests.searches.{SearchRequest, SearchResponse}
@@ -13,22 +15,20 @@ import io.circe.generic.auto._
 import com.sksamuel.elastic4s.circe._
 import Types._
 
+// https://www.elastic.co/guide/en/elasticsearch/reference/current/mapping-types.html
 object CatsExample extends IOApp {
 
   val catsIndex: CreateIndexRequest = createIndex("cats")
     .mapping(
         properties(
-          TextField("id")
-        , KeywordField("name", store = Some(true))
+          KeywordField("id")
+        , TextField("name", store = Some(true), fielddata = Some(true), fields = List(KeywordField("keyword")))
         , IntegerField("age")
         , TextField("food")
-//        , NestedField(
-//            name = "owner"
-//          , properties = List(
-//              TextField("firstName", fields = List(KeywordField("keyword", ignoreAbove = Some(256))))
-//            , TextField("secondName", fields = List(KeywordField("keyword", ignoreAbove = Some(256))))
-//          )
-//        )
+        , ObjectField(
+            name = "owner"
+          , properties = List(TextField("firstName"), TextField("secondName"))
+        )
       )
     )
     .replicas(2)
@@ -37,21 +37,22 @@ object CatsExample extends IOApp {
     .query(
         boolQuery().must(
           termsQuery("food", "fish")
-        , termsQuery("owner.firstName", "bob")
+        , rangeQuery("age").lte(5)
+        , matchQuery("owner.firstName", "bob")
       )
     )
     .sortByFieldAsc("name")
 
   def insertCat(cat: Cat): IndexRequest =
     indexInto("cats")
-    //      .fields(
-    //          "id"   -> cat.id
-    //        , "name" -> cat.name
-    //        , "age"  -> cat.age
-    //        , "food" -> cat.food
-    //        , "owner" -> cat.owner
-    //      )
-      .source(cat)
+//      .fieldValues(
+//          SimpleFieldValue("id", cat.id)
+//        , SimpleFieldValue("name", cat.name)
+//        , SimpleFieldValue("age", cat.age)
+//        , ArrayFieldValue("food", cat.food.map(SimpleFieldValue.apply(_)))
+//        , SimpleFieldValue("owner", Map("firstName" -> cat.owner.firstName, "secondName" -> cat.owner.secondName))
+//      )
+            .source(cat)
       .id(cat.id)
       .refresh(RefreshPolicy.Immediate)
 
@@ -60,7 +61,8 @@ object CatsExample extends IOApp {
     case RequestFailure(_, _, _, e) => consoleLog(s"We failed: $e")
     case RequestSuccess(_, _, _, r) =>
       for {
-//        _ <- Sync[F].delay(r.hits.hits.toList.foreach(println))
+        _ <- Sync[F].delay(r.hits.hits.toList.foreach(println))
+        _ <- consoleLog("-------------------------------")
         _ <- r.to[Cat].toList.map(r => consoleLog(r.toString)).sequence
         _ <- consoleLog(s"There were ${r.totalHits} total hits")
       } yield ()
@@ -72,11 +74,13 @@ object CatsExample extends IOApp {
       .use { elastic =>
         for {
 //          _    <- elastic.execute(deleteIndex("cats"))
-          created <- elastic.execute(catsIndex)
-          _       <- consoleLog[IO](created.toString)
-          _       <- elastic.execute(bulk(insertCat(cat1), insertCat(cat2), insertCat(cat3)))
-          resp    <- elastic.execute(searchIndex)
-          _       <- report[IO](resp)
+//
+//          created <- elastic.execute(catsIndex)
+//          _       <- consoleLog[IO](created.result.toString)
+//          insert <- elastic.execute(bulk(insertCat(cat1), insertCat(cat2), insertCat(cat3)))
+//          _      <- consoleLog[IO](insert.result.toString)
+          resp   <- elastic.execute(searchIndex)
+          _      <- report[IO](resp)
         } yield ()
 
       }
