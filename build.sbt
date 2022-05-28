@@ -10,6 +10,7 @@ libraryDependencies ++= Seq(
   , "com.sksamuel.elastic4s" % "elastic4s-client-esjava_2.13" % elasticVersion
   , "com.sksamuel.elastic4s" % "elastic4s-json-circe_2.13"    % elasticVersion
   , "com.sksamuel.elastic4s" % "elastic4s-effect-cats_2.13"   % elasticVersion
+
   , "org.typelevel"          %% "cats-effect"                 % catsVersion
   , "org.typelevel"          %% "cats-core"                   % catsVersion
   , "io.circe"               %% "circe-core"                  % circeVersion

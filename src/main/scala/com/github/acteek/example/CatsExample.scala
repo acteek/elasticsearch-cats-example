@@ -29,6 +29,10 @@ object CatsExample extends IOApp {
             name = "owner"
           , properties = List(TextField("firstName"), TextField("secondName"))
         )
+        , ObjectField(
+            name = "home"
+          , properties = List(TextField("address"))
+        )
       )
     )
     .replicas(2)
@@ -37,7 +41,7 @@ object CatsExample extends IOApp {
     .query(
         boolQuery().must(
           termsQuery("food", "fish")
-        , rangeQuery("age").lte(5)
+//        , rangeQuery("age").lte(5)
         , matchQuery("owner.firstName", "bob")
       )
     )
@@ -45,14 +49,14 @@ object CatsExample extends IOApp {
 
   def insertCat(cat: Cat): IndexRequest =
     indexInto("cats")
-//      .fieldValues(
-//          SimpleFieldValue("id", cat.id)
-//        , SimpleFieldValue("name", cat.name)
-//        , SimpleFieldValue("age", cat.age)
-//        , ArrayFieldValue("food", cat.food.map(SimpleFieldValue.apply(_)))
-//        , SimpleFieldValue("owner", Map("firstName" -> cat.owner.firstName, "secondName" -> cat.owner.secondName))
-//      )
-            .source(cat)
+    //      .fieldValues(
+    //          SimpleFieldValue("id", cat.id)
+    //        , SimpleFieldValue("name", cat.name)
+    //        , SimpleFieldValue("age", cat.age)
+    //        , ArrayFieldValue("food", cat.food.map(SimpleFieldValue.apply(_)))
+    //        , SimpleFieldValue("owner", Map("firstName" -> cat.owner.firstName, "secondName" -> cat.owner.secondName))
+    //      )
+      .source(cat)
       .id(cat.id)
       .refresh(RefreshPolicy.Immediate)
 
@@ -75,8 +79,8 @@ object CatsExample extends IOApp {
         for {
 //          _    <- elastic.execute(deleteIndex("cats"))
 //
-//          created <- elastic.execute(catsIndex)
-//          _       <- consoleLog[IO](created.result.toString)
+          created <- elastic.execute(catsIndex)
+          _       <- consoleLog[IO](created.result.toString)
 //          insert <- elastic.execute(bulk(insertCat(cat1), insertCat(cat2), insertCat(cat3)))
 //          _      <- consoleLog[IO](insert.result.toString)
           resp   <- elastic.execute(searchIndex)
